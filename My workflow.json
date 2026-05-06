@@ -1,0 +1,218 @@
+{
+  "name": "My workflow",
+  "nodes": [
+    {
+      "parameters": {
+        "pollTimes": {
+          "item": [
+            {
+              "mode": "everyMinute"
+            }
+          ]
+        },
+        "filters": {}
+      },
+      "type": "n8n-nodes-base.gmailTrigger",
+      "typeVersion": 1.3,
+      "position": [
+        0,
+        0
+      ],
+      "id": "5390a216-ed34-4e4d-9e03-288f9f04e73d",
+      "name": "Gmail Trigger",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "XKLi6tjjoc0dpGid",
+          "name": "Gmail OAuth2 API"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "inputText": "={{ $json.snippet }}",
+        "categories": {
+          "categories": [
+            {
+              "category": "order",
+              "description": "if any new email inside include new order then make it separate "
+            }
+          ]
+        },
+        "options": {
+          "enableAutoFixing": false,
+          "batching": {
+            "batchSize": 1
+          }
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.textClassifier",
+      "typeVersion": 1.1,
+      "position": [
+        416,
+        0
+      ],
+      "id": "c429333d-7f5b-41d9-9a02-121f61204af0",
+      "name": "Text Classifier",
+      "executeOnce": false
+    },
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1.1,
+      "position": [
+        208,
+        0
+      ],
+      "id": "b5347cab-20eb-4f11-9142-d463b86a6a99",
+      "name": "Wait",
+      "webhookId": "f3099d4d-0e4f-4ec8-8277-3c33871c85f8"
+    },
+    {
+      "parameters": {
+        "modelId": {
+          "__rl": true,
+          "mode": "list",
+          "value": "models/gemini-3-flash-preview"
+        },
+        "messages": {
+          "values": [
+            {
+              "content": "=You are a professional copywriter and my personal Gmail assistant. Your task is to generate a reply to the following email:\n\nEmail:\n{{ $json.snippet }}\n\nInstructions:\n\nProvide the response in two parts only:\nSubject Line\nEmail Body\nThe reply must be clear, professional, and context-aware based on the email content.\nDo not include explanations, suggestions, or extra text.\nDo not add placeholders—produce a complete, send-ready email.\n\nOutput format:\n\nSubject: <your subject line here>\n\nEmail:\n<your email body here>"
+            }
+          ]
+        },
+        "simplify": false,
+        "jsonOutput": true,
+        "builtInTools": {},
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.googleGemini",
+      "typeVersion": 1.2,
+      "position": [
+        816,
+        -96
+      ],
+      "id": "2d6548d4-bb70-4168-9c25-b926d8f00f93",
+      "name": "Message a model",
+      "credentials": {
+        "googlePalmApi": {
+          "id": "hIeQ0kSBxyA1K19V",
+          "name": "Google Gemini(PaLM) Api account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "resource": "draft",
+        "subject": "=testing",
+        "message": "={{ $json.candidates[0].content.parts[0].text }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.2,
+      "position": [
+        1120,
+        -64
+      ],
+      "id": "e9a43aaa-f91b-49a7-8d5d-460add3d5bf6",
+      "name": "Create a draft",
+      "webhookId": "ec6df59a-7562-487e-abfd-09085cdfd10a",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "2kakBYTelMobLgoY",
+          "name": "Gmail OAuth2 API"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatGoogleGemini",
+      "typeVersion": 1.1,
+      "position": [
+        352,
+        208
+      ],
+      "id": "bf779c43-a099-48ba-8acc-710313472bdf",
+      "name": "Google Gemini Chat Model",
+      "credentials": {
+        "googlePalmApi": {
+          "id": "hIeQ0kSBxyA1K19V",
+          "name": "Google Gemini(PaLM) Api account"
+        }
+      }
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Gmail Trigger": {
+      "main": [
+        [
+          {
+            "node": "Wait",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Wait": {
+      "main": [
+        [
+          {
+            "node": "Text Classifier",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Text Classifier": {
+      "main": [
+        [
+          {
+            "node": "Message a model",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        []
+      ]
+    },
+    "Message a model": {
+      "main": [
+        [
+          {
+            "node": "Create a draft",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Google Gemini Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Text Classifier",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate"
+  },
+  "versionId": "4048e142-a542-484b-92cb-3a3e0619a4ce",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "7d79a5e18370813ed31e185abd13a13db8a242cecc19c2e3313b496baffe9026"
+  },
+  "id": "B3jjRdM4YHVIXTQ8",
+  "tags": []
+}
