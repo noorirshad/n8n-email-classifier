@@ -1,0 +1,344 @@
+{
+  "name": "My workflow 2",
+  "nodes": [
+    {
+      "parameters": {
+        "pollTimes": {
+          "item": [
+            {
+              "mode": "everyMinute"
+            }
+          ]
+        },
+        "filters": {}
+      },
+      "type": "n8n-nodes-base.gmailTrigger",
+      "typeVersion": 1.3,
+      "position": [
+        0,
+        0
+      ],
+      "id": "5463a444-9b88-4423-815b-c02d02bc1424",
+      "name": "Gmail Trigger",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "2kakBYTelMobLgoY",
+          "name": "Gmail OAuth2 API"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "inputText": "={{ $json.snippet }}",
+        "categories": {
+          "categories": [
+            {
+              "category": "order",
+              "description": "if any new email inside include new order then make it separate "
+            },
+            {
+              "category": "inquiry",
+              "description": "if any new email inside enquiry include then make it separate "
+            }
+          ]
+        },
+        "options": {
+          "enableAutoFixing": false,
+          "batching": {
+            "batchSize": 1
+          }
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.textClassifier",
+      "typeVersion": 1.1,
+      "position": [
+        416,
+        0
+      ],
+      "id": "83955f3a-033a-4560-ab84-ad050506e18a",
+      "name": "Text Classifier"
+    },
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1.1,
+      "position": [
+        208,
+        0
+      ],
+      "id": "7af69e1e-74a1-4cbc-82f4-d907e37012a9",
+      "name": "Wait",
+      "webhookId": "95e67558-d026-43f1-ba5f-55c85f5e2a0b"
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatGoogleGemini",
+      "typeVersion": 1.1,
+      "position": [
+        352,
+        208
+      ],
+      "id": "b5fe9b00-e7a7-4caa-9327-907b7c032efe",
+      "name": "Google Gemini Chat Model",
+      "credentials": {
+        "googlePalmApi": {
+          "id": "hIeQ0kSBxyA1K19V",
+          "name": "Google Gemini(PaLM) Api account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "modelId": {
+          "__rl": true,
+          "mode": "list",
+          "value": "models/gemini-3-flash-preview"
+        },
+        "messages": {
+          "values": [
+            {
+              "content": "=You need to write a professional reply to  email  {{ $json.snippet }}\ni need sepreate text for subject and body not in one veraible"
+            }
+          ]
+        },
+        "simplify": false,
+        "jsonOutput": true,
+        "builtInTools": {},
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.googleGemini",
+      "typeVersion": 1.2,
+      "position": [
+        768,
+        0
+      ],
+      "id": "d5d93be0-7c95-4790-a804-f5c3a1e83114",
+      "name": "Message a model",
+      "credentials": {
+        "googlePalmApi": {
+          "id": "hIeQ0kSBxyA1K19V",
+          "name": "Google Gemini(PaLM) Api account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const raw = $input.first().json.candidates[0].content.parts[0].text\n\n// convert text JSON string into object\nconst parsed = JSON.parse(raw);\n\nreturn [\n  {\n    json: {\n      subject: parsed.subject,\n      body: parsed.body\n    }\n  }\n];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1120,
+        0
+      ],
+      "id": "33d16297-c55c-4e40-b940-863212b7c65c",
+      "name": "Code in JavaScript"
+    },
+    {
+      "parameters": {
+        "resource": "draft",
+        "subject": "={{ $json.subject }}",
+        "message": "={{ $json.body }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.2,
+      "position": [
+        1328,
+        0
+      ],
+      "id": "2e68f13f-8c0f-4d03-9d58-a71594ad481a",
+      "name": "Create a draft",
+      "webhookId": "44598920-a0de-4bca-8add-b5e687e8fdc4",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "kzDbqByhKLlaCPKu",
+          "name": "Gmail OAuth2 API"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "modelId": {
+          "__rl": true,
+          "value": "models/gemini-3-flash-preview",
+          "mode": "list",
+          "cachedResultName": "models/gemini-3-flash-preview"
+        },
+        "messages": {
+          "values": [
+            {
+              "content": "=You need to create a response to the email  {{ $json.snippet }}"
+            }
+          ]
+        },
+        "simplify": false,
+        "jsonOutput": true,
+        "builtInTools": {},
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.googleGemini",
+      "typeVersion": 1.2,
+      "position": [
+        816,
+        144
+      ],
+      "id": "1a45e932-8a13-4216-83e0-317b4a0e336a",
+      "name": "Message a model1",
+      "credentials": {
+        "googlePalmApi": {
+          "id": "hIeQ0kSBxyA1K19V",
+          "name": "Google Gemini(PaLM) Api account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const raw = $input.first().json.candidates[0].content.parts[0].text\n\n// convert text JSON string into object\nconst parsed = JSON.parse(raw);\n\nreturn [\n  {\n    json: {\n      subject: parsed.subject,\n      body: parsed.body\n    }\n  }\n];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1168,
+        144
+      ],
+      "id": "fc1494c4-7e34-4490-8133-38c70bee8959",
+      "name": "Code in JavaScript1"
+    },
+    {
+      "parameters": {
+        "resource": "draft",
+        "subject": "={{ $json.subject }}",
+        "message": "={{ $json.body }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.2,
+      "position": [
+        1376,
+        144
+      ],
+      "id": "a77f9be5-c7f9-4c58-8b01-ab930fc60248",
+      "name": "Create a draft1",
+      "webhookId": "2f3221d3-d028-4ad0-9150-8e8bd4f21257",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "kzDbqByhKLlaCPKu",
+          "name": "Gmail OAuth2 API"
+        }
+      }
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Gmail Trigger": {
+      "main": [
+        [
+          {
+            "node": "Wait",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Wait": {
+      "main": [
+        [
+          {
+            "node": "Text Classifier",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Google Gemini Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Text Classifier",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Text Classifier": {
+      "main": [
+        [
+          {
+            "node": "Message a model",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Message a model1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Message a model": {
+      "main": [
+        [
+          {
+            "node": "Code in JavaScript",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code in JavaScript": {
+      "main": [
+        [
+          {
+            "node": "Create a draft",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Message a model1": {
+      "main": [
+        [
+          {
+            "node": "Code in JavaScript1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code in JavaScript1": {
+      "main": [
+        [
+          {
+            "node": "Create a draft1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate"
+  },
+  "versionId": "70cf8cbe-b127-4f1b-a342-e49ad907dca2",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "7d79a5e18370813ed31e185abd13a13db8a242cecc19c2e3313b496baffe9026"
+  },
+  "id": "0QZ5zDQvyr9KYvYd",
+  "tags": []
+}
